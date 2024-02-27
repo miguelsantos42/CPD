@@ -125,8 +125,62 @@ void OnMultLine(int m_ar, int m_br)
 // add code here for block x block matriz multiplication
 void OnMultBlock(int m_ar, int m_br, int bkSize)
 {
-    
-    
+        SYSTEMTIME Time1, Time2;
+	
+	char st[100];
+	int i, j, k;
+
+	double *pha, *phb, *phc;
+	
+    pha = (double *)malloc((m_ar * m_ar) * sizeof(double));
+	phb = (double *)malloc((m_ar * m_ar) * sizeof(double));
+	phc = (double *)malloc((m_ar * m_ar) * sizeof(double));
+
+	for(i=0; i<m_ar; i++)
+		for(j=0; j<m_ar; j++)
+			pha[i*m_ar + j] = (double)1.0;
+
+
+
+	for(i=0; i<m_br; i++)
+		for(j=0; j<m_br; j++)
+			phb[i*m_br + j] = (double)(i+1);
+
+
+    Time1 = clock();
+
+	int num_blocks = m_ar/bkSize;
+	
+ 
+	for (int line_matrix_a = 0; line_matrix_a < num_blocks; line_matrix_a++) { //percorre as linhas de blocos da matriz A
+		
+		for(int block_index=0; block_index < num_blocks; block_index++) { //percorre os blocos da linha
+
+			for(int col_matrix_b=0; col_matrix_b < num_blocks; col_matrix_b++) { //percorre as colunas de blocos da matriz b
+				int next_line_a = (line_matrix_a + 1) * bkSize; //proxima linha de blocos da matriz A
+				
+				for(int i = line_matrix_a * bkSize; i < next_line_a; i++) { //percorre as linhas de um dos blocos da matriz A
+					int next_block_a = (block_index + 1) * bkSize;
+
+					for (int k = block_index * bkSize; k < next_block_a; k++) { //percorre as colunas do bloco
+						int next_block_b = (col_matrix_b+1)*bkSize;
+
+						for (int j = col_matrix_b * bkSize; j < next_block_b; j++) { //percorre as colunas de um bloco da matriz B
+							phc[i * m_ar + j] += pha[i * m_ar + k] * phb[k * m_ar + j];
+						}
+					}
+				}
+			}
+		}
+	}
+
+	Time2 = clock();
+
+	sprintf(st, "Time: %3.3f seconds\n", (double)(Time2 - Time1) / CLOCKS_PER_SEC);
+
+	free(pha);
+	free(phb);
+	free(phc);
 }
 
 
