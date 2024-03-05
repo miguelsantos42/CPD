@@ -98,10 +98,6 @@ void OnMultLine(int m_ar, int m_br)
 		}
 	}
 
-	for(int i = 0; i < m_ar * m_br; i++){
-		phc[i] = 0;
-	}
-	
 	Time1 = clock();
 
 	for(i = 0; i < m_ar; i++){
