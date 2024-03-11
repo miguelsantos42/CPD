@@ -98,10 +98,6 @@ void OnMultLine(int m_ar, int m_br)
 		}
 	}
 
-	for(int i = 0; i < m_ar * m_br; i++){
-		phc[i] = 0;
-	}
-	
 	Time1 = clock();
 
 	for(i = 0; i < m_ar; i++){
@@ -213,25 +209,41 @@ int main (int argc, char *argv[])
 	int op;
 	
 	int EventSet = PAPI_NULL;
-  	long long values[2];
+  	long long values[4];
+	long long *values_ptr = values;
   	int ret;
 	
 
 	ret = PAPI_library_init( PAPI_VER_CURRENT );
-	if ( ret != PAPI_VER_CURRENT )
-		std::cout << "FAIL" << endl;
-
+	if ( ret != PAPI_VER_CURRENT ){
+		cout << "FAIL" << endl;
+	}
 
 	ret = PAPI_create_eventset(&EventSet);
-		if (ret != PAPI_OK) cout << "ERROR: create eventset" << endl;
-
+	if (ret != PAPI_OK){
+		cout << "ERROR: create eventset" << endl;
+	}
 
 	ret = PAPI_add_event(EventSet,PAPI_L1_DCM );
-	if (ret != PAPI_OK) cout << "ERROR: PAPI_L1_DCM" << endl;
-
+	if (ret != PAPI_OK){
+		cout << "ERROR: PAPI_L1_DCM" << endl;
+	}
 
 	ret = PAPI_add_event(EventSet,PAPI_L2_DCM);
-	if (ret != PAPI_OK) cout << "ERROR: PAPI_L2_DCM" << endl;
+	if (ret != PAPI_OK){
+		cout << "ERROR: PAPI_L2_DCM" << endl;
+	}
+
+	ret = PAPI_add_event(EventSet,PAPI_TOT_INS);
+	if (ret != PAPI_OK){
+		cout << "ERROR: PAPI_TOT_INS" << endl;
+	}
+
+	ret = PAPI_add_event(EventSet,PAPI_TOT_CYC);
+	if (ret != PAPI_OK){
+		cout << "ERROR: PAPI_TOT_CYC" << endl;
+	}
+
 
 
 	op=1;
@@ -249,8 +261,14 @@ int main (int argc, char *argv[])
 
 
 		// Start counting
+
 		ret = PAPI_start(EventSet);
-		if (ret != PAPI_OK) cout << "ERROR: Start PAPI" << endl;
+		if (ret != PAPI_OK){
+			cout << "ERROR: Start PAPI" << endl;
+		}
+
+		SYSTEMTIME Time1, Time2;
+		char st[100];
 
 		switch (op){
 			case 1: 
@@ -262,15 +280,33 @@ int main (int argc, char *argv[])
 			case 3:
 				cout << "Block Size? ";
 				cin >> blockSize;
-				OnMultBlock(lin, col, blockSize);  
+				Time1 = clock();
+				OnMultBlock(lin, col, blockSize);
+				Time2 = clock();
+				sprintf(st, "Time: %3.3f seconds\n", (double)(Time2 - Time1) / CLOCKS_PER_SEC);
+                cout << st; 
 				break;
 
 		}
 
-  		ret = PAPI_stop(EventSet, values);
-  		if (ret != PAPI_OK) cout << "ERROR: Stop PAPI" << endl;
-  		printf("L1 DCM: %lld \n",values[0]);
-  		printf("L2 DCM: %lld \n",values[1]);
+
+		ret = PAPI_stop(EventSet, values_ptr);
+  		if (ret != PAPI_OK){
+			cout << "ERROR: Stop PAPI" << endl;
+		}
+
+		cout << "L1 DCM: " << values[0] << endl;
+		cout << "L2 DCM: " << values[1] << endl;
+		cout << "Total Cycles: " << values[2] << endl;
+		cout << "Total Instructions: " << values[3] << endl;
+		
+		if (values[3] != 0) {
+        	cout << "CPI: " << static_cast<double>((values[2]*1.0)) / values[3] << endl;
+    	} 
+		else {
+        	cout << "CPI: N/A (no instructions counted)" << endl;
+    	}
+
 
 		ret = PAPI_reset( EventSet );
 		if ( ret != PAPI_OK )
@@ -291,5 +327,5 @@ int main (int argc, char *argv[])
 	ret = PAPI_destroy_eventset( &EventSet );
 	if ( ret != PAPI_OK )
 		std::cout << "FAIL destroy" << endl;
-
 }
+
