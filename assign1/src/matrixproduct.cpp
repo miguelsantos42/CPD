@@ -145,21 +145,21 @@ void OnMultBlock(int m_ar, int m_br, int bkSize)
 
     Time1 = clock();
 
-	int num_blocks = m_ar/bkSize;
+	int num_blocks = m_ar/bkSize; //numero de blocos a dividir as matrizes
 	
  
 	for (int line_matrix_a = 0; line_matrix_a < num_blocks; line_matrix_a++) { //percorre as linhas de blocos da matriz A
 		
-		for(int block_index=0; block_index < num_blocks; block_index++) { //percorre os blocos da linha
+		for(int block_index=0; block_index < num_blocks; block_index++) { //percorre os blocos da linha atual
 
 			for(int col_matrix_b=0; col_matrix_b < num_blocks; col_matrix_b++) { //percorre as colunas de blocos da matriz b
 				int next_line_a = (line_matrix_a + 1) * bkSize; //proxima linha de blocos da matriz A
 				
-				for(int i = line_matrix_a * bkSize; i < next_line_a; i++) { //percorre as linhas de um dos blocos da matriz A
-					int next_block_a = (block_index + 1) * bkSize;
+				for(int i = line_matrix_a * bkSize; i < next_line_a; i++) { //percorre as linhas do bloco atual da matriz A
+					int next_block_a = (block_index + 1) * bkSize; //proxima coluna dentro do bloco atual da matriz A
 
-					for (int k = block_index * bkSize; k < next_block_a; k++) { //percorre as colunas do bloco
-						int next_block_b = (col_matrix_b+1)*bkSize;
+					for (int k = block_index * bkSize; k < next_block_a; k++) { //percorre as colunas do bloco atual da matriz A
+						int next_block_b = (col_matrix_b+1)*bkSize; //proxima coluna dentro do bloco atual da matriz B
 
 						for (int j = col_matrix_b * bkSize; j < next_block_b; j++) { //percorre as colunas de um bloco da matriz B
 							phc[i * m_ar + j] += pha[i * m_ar + k] * phb[k * m_ar + j];
