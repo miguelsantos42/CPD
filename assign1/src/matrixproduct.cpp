@@ -10,52 +10,59 @@ using namespace std;
 #define SYSTEMTIME clock_t
 
  
-void OnMult(int m_ar, int m_br) 
+void OnMult(int m_ar, int m_br) // realizar a multiplicação de duas matrizes e armazenar o resultado numa outra matriz
+								//m_ar e m_br são as dimensões de cada uma das matrizes
 {
 	
-	SYSTEMTIME Time1, Time2;
+	SYSTEMTIME Time1, Time2;  //Armazenam os tempos no início e no final do processo
 	
-	char st[100];
-	double temp;
+	char st[100];			//array de caracteres que irá armazenar a string do tempo de execução
+	double temp;			//calcular a soma temporária dos produtos
 	int i, j, k;
 
-	double *pha, *phb, *phc;
-	
-
-		
-    pha = (double *)malloc((m_ar * m_ar) * sizeof(double));
+	double *pha, *phb, *phc; 
+	//é alocado memória para cada uma das matrizes, cujo o tamanho de memória alocada é o tamanho da matriz ao quadrado multiplicado pelo tamanho de um double
+    //no fundo é esta quantidade de memória alocada pois é uma matriz nxn, (n linhas, n colunas)
+	pha = (double *)malloc((m_ar * m_ar) * sizeof(double)); 
 	phb = (double *)malloc((m_ar * m_ar) * sizeof(double));
 	phc = (double *)malloc((m_ar * m_ar) * sizeof(double));
 
+	//está a ser montada a matriz pha com valor de 1.0 em todas as posições
 	for(i=0; i<m_ar; i++)
 		for(j=0; j<m_ar; j++)
 			pha[i*m_ar + j] = (double)1.0;
-
+	//pha[i*m_ar + j] = (double)1.0; -> m_Ar é o nºlinhas/nºcolunas;
 
 
 	for(i=0; i<m_br; i++)
 		for(j=0; j<m_br; j++)
 			phb[i*m_br + j] = (double)(i+1);
+	// aqui todos os elemntos da primeira linha estão a ser setado a 1.0
+	// na segunda a 2.0
+	//na terceira a 3.0 e continua;
 
 
-
+	//aqui será calculado o tempo de inicio de multiplicação da matriz
     Time1 = clock();
 
-	for(i=0; i<m_ar; i++)
-	{	for( j=0; j<m_br; j++)
-		{	temp = 0;
-			for( k=0; k<m_ar; k++)
+	//realização da multiplicação 
+	for(i=0; i<m_ar; i++)  				//acesso às linha da matriz pha
+	{	for( j=0; j<m_br; j++)			//acesso às coluna da matriz phb
+		{	temp = 0;					//irá acumular os resultados da multiplicação
+			for( k=0; k<m_ar; k++)		//percorre as colunas da matriz pha e as linhas de phb, variavel k é usada para indexar as colunas de pha e as linhas de phb
 			{	
-				temp += pha[i*m_ar+k] * phb[k*m_br+j];
+				temp += pha[i*m_ar+k] * phb[k*m_br+j]; //acumular o valor multiplicando o elemento dalinha i e coluna k da matriz A com o elemento da linha K, coluna j da matriz B
 			}
 			phc[i*m_ar+j]=temp;
+			//temp conterá a soma dos produtos dos elementos da linha i da matriz A pelos elementos da coluna j da matriz B
 		}
 	}
 
 
-    Time2 = clock();
-	sprintf(st, "Time: %3.3f seconds\n", (double)(Time2 - Time1) / CLOCKS_PER_SEC);
+    Time2 = clock(); //capturação do tempo final
+	sprintf(st, "Time: %3.3f seconds\n", (double)(Time2 - Time1) / CLOCKS_PER_SEC); //tempo necessário para a multiplicação da matriz
 	cout << st;
+	//Como CLOCKS_PER_SEC representa o número de ticks por segundo, a divisão nos dá o tempo em segundos
 
 	// display 10 elements of the result matrix tto verify correctness
 	cout << "Result matrix: " << endl;
@@ -64,12 +71,14 @@ void OnMult(int m_ar, int m_br)
 			cout << phc[j] << " ";
 	}
 	cout << endl;
+	//é exibida a matriz, no máximo 10 elementos
+	//Se m_br for menor que 10, a função min garantirá que apenas os elementos existentes sejam considerados
 
     free(pha);
     free(phb);
     free(phc);
 	
-	
+	// está a ser Libera a memória previamente alocada para as matrizes A, B e C
 }
 
 // add code here for line x line matriz multiplication
@@ -100,10 +109,13 @@ void OnMultLine(int m_ar, int m_br)
 
 	Time1 = clock();
 
-	for(i = 0; i < m_ar; i++){
-		for(k = 0; k < m_ar; k++){
-			for(j = 0; j < m_br; j++){
+
+	//tentativa de otimizar a multiplicação de matrizes ao reorganizar os acessos à memória para melhoria a reutilização dos dados
+	for(i = 0; i < m_ar; i++){ 				//Itera sobre as linhas da matriz pha;
+		for(k = 0; k < m_ar; k++){			//Itera sobre as colunas da matriz A e sobre as linhas da matriz B;
+			for(j = 0; j < m_br; j++){		//Itera sobre as colunas da matriz B;
 				phc[i*m_ar+j] += pha[i*m_ar+k] * phb[k*m_br+j];
+				//o resultado do produto é acumulado na matriz C construindo a matriz C, elemento a elemento, linha a linha;
 			}
 		}
 	}
