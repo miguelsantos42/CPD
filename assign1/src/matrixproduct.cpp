@@ -160,21 +160,21 @@ void OnMultBlock(int m_ar, int m_br, int bkSize)
 	int num_blocks = m_ar/bkSize; //numero de blocos a dividir as matrizes
 	
  
-	for (int line_matrix_a = 0; line_matrix_a < num_blocks; line_matrix_a++) { //percorre as linhas de blocos da matriz A
+	for (int line_matrix_a = 0; line_matrix_a < num_blocks; line_matrix_a++) { //percorre as linhas de blocos da matriz A. Ele define a iteração ao longo das linhas dos blocos
 		
-		for(int block_index=0; block_index < num_blocks; block_index++) { //percorre os blocos da linha atual
+		for(int block_index=0; block_index < num_blocks; block_index++) { //percorre os blocos da linha atual. Ele representa a iteração pelos blocos ao longo de uma linha específica da matriz A
 
-			for(int col_matrix_b=0; col_matrix_b < num_blocks; col_matrix_b++) { //percorre as colunas de blocos da matriz b
+			for(int col_matrix_b=0; col_matrix_b < num_blocks; col_matrix_b++) { //percorre as colunas de blocos da matriz b. Ele itera ao longo das colunas dos blocos da matriz B
 				int next_line_a = (line_matrix_a + 1) * bkSize; //proxima linha de blocos da matriz A
 				
-				for(int i = line_matrix_a * bkSize; i < next_line_a; i++) { //percorre as linhas do bloco atual da matriz A
+				for(int i = line_matrix_a * bkSize; i < next_line_a; i++) { //percorre as linhas do bloco atual da matriz A. Itera sobre as linhas específicas do bloco atual
 					int next_block_a = (block_index + 1) * bkSize; //proxima coluna dentro do bloco atual da matriz A
 
-					for (int k = block_index * bkSize; k < next_block_a; k++) { //percorre as colunas do bloco atual da matriz A
+					for (int k = block_index * bkSize; k < next_block_a; k++) { //percorre as colunas do bloco atual da matriz A. Itera sobre as colunas específicas do bloco da matriz A
 						int next_block_b = (col_matrix_b+1)*bkSize; //proxima coluna dentro do bloco atual da matriz B
 
-						for (int j = col_matrix_b * bkSize; j < next_block_b; j++) { //percorre as colunas de um bloco da matriz B
-							phc[i * m_ar + j] += pha[i * m_ar + k] * phb[k * m_ar + j];
+						for (int j = col_matrix_b * bkSize; j < next_block_b; j++) { //percorre as colunas de um bloco da matriz B. Itera sobre as colunas específicas do bloco da matriz B
+							phc[i * m_ar + j] += pha[i * m_ar + k] * phb[k * m_ar + j]; //i * m_ar: Isso calcula o deslocamento para a linha i na matriz. Como cada linha tem m_ar elementos, multiplicar i por m_ar resulta no deslocamento correto para a linha i. +j é para apontar para a coluna j dentro da linha i
 						}
 					}
 				}
