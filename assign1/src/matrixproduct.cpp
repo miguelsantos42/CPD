@@ -47,8 +47,10 @@ void OnMult(int m_ar, int m_br) // realizar a multiplicação de duas matrizes e
 
 	//realização da multiplicação 
 	for(i=0; i<m_ar; i++)  				//acesso às linha da matriz pha
-	{	for( j=0; j<m_br; j++)			//acesso às coluna da matriz phb
-		{	temp = 0;					//irá acumular os resultados da multiplicação
+	{	
+		for( j=0; j<m_br; j++)			//acesso às coluna da matriz phb
+		{	
+			temp = 0;					//irá acumular os resultados da multiplicação
 			for( k=0; k<m_ar; k++)		//percorre as colunas da matriz pha e as linhas de phb, variavel k é usada para indexar as colunas de pha e as linhas de phb
 			{	
 				temp += pha[i*m_ar+k] * phb[k*m_br+j]; //acumular o valor multiplicando o elemento dalinha i e coluna k da matriz A com o elemento da linha K, coluna j da matriz B
@@ -79,55 +81,6 @@ void OnMult(int m_ar, int m_br) // realizar a multiplicação de duas matrizes e
     free(phc);
 	
 	// está a ser Libera a memória previamente alocada para as matrizes A, B e C
-}
-
-// add code here for line x line matriz multiplication
-void OnMultLine(int m_ar, int m_br)
-{
-	SYSTEMTIME Time1, Time2;
-
-	char st[100];
-	int i, j, k;
-
-	double *pha, *phb, *phc;
-
-	pha = (double *)malloc((m_ar * m_ar) * sizeof(double));
-	phb = (double *)malloc((m_ar * m_ar) * sizeof(double));
-	phc = (double *)malloc((m_ar * m_ar) * sizeof(double));
-
-	for(i = 0; i < m_ar; i++){
-		for(j = 0; j < m_ar; j++){
-			pha[i*m_ar + j] = (double)1.0; 
-		}
-	}
-
-	for(i = 0; i < m_br; i++){
-		for(j = 0; j < m_br; j++){
-			phb[i * m_br + j] = (double)(i+1);
-		}
-	}
-
-	Time1 = clock();
-
-
-	//tentativa de otimizar a multiplicação de matrizes ao reorganizar os acessos à memória para melhoria a reutilização dos dados
-	for(i = 0; i < m_ar; i++){ 				//Itera sobre as linhas da matriz pha;
-		for(k = 0; k < m_ar; k++){			//Itera sobre as colunas da matriz A e sobre as linhas da matriz B;
-			for(j = 0; j < m_br; j++){		//Itera sobre as colunas da matriz B;
-				phc[i*m_ar+j] += pha[i*m_ar+k] * phb[k*m_br+j];
-				//o resultado do produto é acumulado na matriz C construindo a matriz C, elemento a elemento, linha a linha;
-			}
-		}
-	}
-
-	Time2 = clock();
-
-	sprintf(st, "Time : %3.3f seconds\n", (double)(Time2 - Time1) / CLOCKS_PER_SEC);
-
-	free(pha);
-	free(phb);
-	free(phc);
-    
 }
 
 // add code here for block x block matriz multiplication
