@@ -50,15 +50,23 @@ Group members:
 - [x] 4096
 - [x] 6144
 - [x] 8192
-- [ ] 10240
+- [x] 10240
 
 ### 3 -> Block Multiplication
 * C++ (block sizes-> 128, 256, 512)
-- [ ] 4096
-- [ ] 6144
-- [ ] 8192
-- [ ] 10240
+- [x] 4096, 128
+- [x] 4096, 256
+- [x] 4096, 512
+- [x] 6144, 128
+- [x] 6144, 256
+- [x] 6144, 512
+- [x] 8192, 128
+- [x] 8192, 256
+- [ ] 8192, 512
+- [x] 10240, 128
+- [ ] 10240, 256
+- [ ] 10240, 512
 
-MFLOPS = 2*(n^3) / tempo
-SPEEDUP = Tsequencial / Tparalelo
+MFLOPS = 2*(n^3) / tempo </br>
+SPEEDUP = Tsequencial / Tparalelo </br>
 EFICIENCIA = SPEEDUP / CORES 
