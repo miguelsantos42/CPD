@@ -58,3 +58,7 @@ Group members:
 - [ ] 6144
 - [ ] 8192
 - [ ] 10240
+
+MFLOPS = 2*(n^3) / tempo
+SPEEDUP = Tsequencial / Tparalelo
+EFICIENCIA = SPEEDUP / CORES 
