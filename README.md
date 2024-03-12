@@ -70,3 +70,5 @@ Group members:
 MFLOPS = 2*(n^3) / tempo </br>
 SPEEDUP = Tsequencial / Tparalelo </br>
 EFICIENCIA = SPEEDUP / CORES 
+
+descobrir porque não funciona pragma omp parallel for, mas funciona pragma omp parallel for private(j,k)
