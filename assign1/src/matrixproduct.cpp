@@ -4,6 +4,7 @@
 #include <time.h>
 #include <cstdlib>
 #include <papi.h>
+#include <omp.h>
 
 using namespace std;
 
@@ -83,6 +84,56 @@ void OnMult(int m_ar, int m_br) // realizar a multiplicação de duas matrizes e
 	// está a ser Libera a memória previamente alocada para as matrizes A, B e C
 }
 
+// add code here for line x line matriz multiplication
+void OnMultLine(int m_ar, int m_br)
+{
+	SYSTEMTIME Time1, Time2;
+
+	char st[100];
+	int i, j, k;
+
+	double *pha, *phb, *phc;
+
+	pha = (double *)malloc((m_ar * m_ar) * sizeof(double));
+	phb = (double *)malloc((m_ar * m_ar) * sizeof(double));
+	phc = (double *)malloc((m_ar * m_ar) * sizeof(double));
+
+	for(i = 0; i < m_ar; i++){
+		for(j = 0; j < m_ar; j++){
+			pha[i*m_ar + j] = (double)1.0; 
+		}
+	}
+
+	for(i = 0; i < m_br; i++){
+		for(j = 0; j < m_br; j++){
+			phb[i * m_br + j] = (double)(i+1);
+		}
+	}
+	
+	double time1= omp_get_wtime();
+
+	#pragma omp parallel private(j,k)
+	//tentativa de otimizar a multiplicação de matrizes ao reorganizar os acessos à memória para melhoria a reutilização dos dados
+	for(i = 0; i < m_ar; i++){ 				//Itera sobre as linhas da matriz pha;
+		for(k = 0; k < m_ar; k++){			//Itera sobre as colunas da matriz A e sobre as linhas da matriz B;
+			//#pragma omp for
+			for(j = 0; j < m_br; j++){		//Itera sobre as colunas da matriz B;
+				phc[i*m_ar+j] += pha[i*m_ar+k] * phb[k*m_br+j];
+				//o resultado do produto é acumulado na matriz C construindo a matriz C, elemento a elemento, linha a linha;
+			}
+		}
+	}
+
+	double time2= omp_get_wtime();
+
+	cout << "Time: " << time2-time1 << endl;
+
+	free(pha);
+	free(phb);
+	free(phc);
+    
+}
+
 // add code here for block x block matriz multiplication
 void OnMultBlock(int m_ar, int m_br, int bkSize)
 {
@@ -90,6 +141,11 @@ void OnMultBlock(int m_ar, int m_br, int bkSize)
 	
 	char st[100];
 	int i, j, k;
+
+// i percorre as linhas do bloco atual de A.
+// k percorre as colunas do bloco de A e as linhas do bloco correspondente de B.
+// j percorre as colunas do bloco de B.
+
 
 	double *pha, *phb, *phc;
 	
@@ -110,24 +166,25 @@ void OnMultBlock(int m_ar, int m_br, int bkSize)
 
     Time1 = clock();
 
-	int num_blocks = m_ar/bkSize; //numero de blocos a dividir as matrizes
+	int num_blocks = m_ar/bkSize;  // a matriz é dividida em blocos de tamanho bkSize
 	
  
-	for (int line_matrix_a = 0; line_matrix_a < num_blocks; line_matrix_a++) { //percorre as linhas de blocos da matriz A. Ele define a iteração ao longo das linhas dos blocos
-		
-		for(int block_index=0; block_index < num_blocks; block_index++) { //percorre os blocos da linha atual. Ele representa a iteração pelos blocos ao longo de uma linha específica da matriz A
-
-			for(int col_matrix_b=0; col_matrix_b < num_blocks; col_matrix_b++) { //percorre as colunas de blocos da matriz b. Ele itera ao longo das colunas dos blocos da matriz B
+	for (int line_matrix_a = 0; line_matrix_a < num_blocks; line_matrix_a++) { //percorre as linhas de blocos da matriz A
+		//itera sobre as linhas de blocos em A (2 linhas de blocos neste exemplo). Primeiro, focamos na primeira linha de blocos de A.
+		for(int block_index=0; block_index < num_blocks; block_index++) { //percorre os blocos da linha
+			//Dentro da primeira linha de blocos de A, iteramos sobre cada bloco (2 blocos neste exemplo). Começamos com o primeiro bloco de A.
+			for(int col_matrix_b=0; col_matrix_b < num_blocks; col_matrix_b++) { //percorre as colunas de blocos da matriz b
+				//Para cada bloco de A, iteramos sobre as colunas de blocos em B, para encontrar os blocos de B correspondentes a multiplicar 
 				int next_line_a = (line_matrix_a + 1) * bkSize; //proxima linha de blocos da matriz A
 				
-				for(int i = line_matrix_a * bkSize; i < next_line_a; i++) { //percorre as linhas do bloco atual da matriz A. Itera sobre as linhas específicas do bloco atual
-					int next_block_a = (block_index + 1) * bkSize; //proxima coluna dentro do bloco atual da matriz A
+				for(int i = line_matrix_a * bkSize; i < next_line_a; i++) { //percorre as linhas de um dos blocos da matriz A
+					int next_block_a = (block_index + 1) * bkSize;
 
-					for (int k = block_index * bkSize; k < next_block_a; k++) { //percorre as colunas do bloco atual da matriz A. Itera sobre as colunas específicas do bloco da matriz A
-						int next_block_b = (col_matrix_b+1)*bkSize; //proxima coluna dentro do bloco atual da matriz B
+					for (int k = block_index * bkSize; k < next_block_a; k++) { //percorre as colunas do bloco
+						int next_block_b = (col_matrix_b+1)*bkSize;
 
-						for (int j = col_matrix_b * bkSize; j < next_block_b; j++) { //percorre as colunas de um bloco da matriz B. Itera sobre as colunas específicas do bloco da matriz B
-							phc[i * m_ar + j] += pha[i * m_ar + k] * phb[k * m_ar + j]; //i * m_ar: Isso calcula o deslocamento para a linha i na matriz. Como cada linha tem m_ar elementos, multiplicar i por m_ar resulta no deslocamento correto para a linha i. +j é para apontar para a coluna j dentro da linha i
+						for (int j = col_matrix_b * bkSize; j < next_block_b; j++) { //percorre as colunas de um bloco da matriz B
+							phc[i * m_ar + j] += pha[i * m_ar + k] * phb[k * m_ar + j];
 						}
 					}
 				}
