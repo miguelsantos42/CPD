@@ -151,12 +151,18 @@ void multLineParalel2(int m_ar, int m_br){
 		}
 	}
 
+	for(int i = 0; i < m_ar; i++){
+		for(int j = 0; j < m_br; j++){
+			phc[i*m_ar + j] = 0.0;
+		}
+	}
+
     double time1= omp_get_wtime();
 
-	#pragma omp parallel
+	#pragma omp parallel private(i,j,k)
 	for(i = 0; i < m_ar; i++){ 				
 		for(k = 0; k < m_ar; k++){
-            #pragma omp for			
+			#pragma omp for	
 			for(j = 0; j < m_br; j++){		
 				phc[i*m_ar+j] += pha[i*m_ar+k] * phb[k*m_br+j];
 			}
