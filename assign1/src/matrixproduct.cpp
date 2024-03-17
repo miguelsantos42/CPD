@@ -116,7 +116,6 @@ void OnMultLine(int m_ar, int m_br)
 	//tentativa de otimizar a multiplicação de matrizes ao reorganizar os acessos à memória para melhoria a reutilização dos dados
 	for(i = 0; i < m_ar; i++){ 				//Itera sobre as linhas da matriz pha;
 		for(k = 0; k < m_ar; k++){			//Itera sobre as colunas da matriz A e sobre as linhas da matriz B;
-			//#pragma omp for
 			for(j = 0; j < m_br; j++){		//Itera sobre as colunas da matriz B;
 				phc[i*m_ar+j] += pha[i*m_ar+k] * phb[k*m_br+j];
 				//o resultado do produto é acumulado na matriz C construindo a matriz C, elemento a elemento, linha a linha;
@@ -126,7 +125,22 @@ void OnMultLine(int m_ar, int m_br)
 
 	double time2= omp_get_wtime();
 
-	cout << "Time: " << time2-time1 << endl;
+	cout << "Time Paralell: " << time2-time1 << endl;
+
+	double sequencial1 = omp_get_wtime();
+
+	for (int i = 0; i < m_ar; i++) {
+        for (int k = 0; k < m_ar; k++) {
+            for (int j = 0; j < m_br; j++) {
+                phc[i*m_ar+j] += pha[i*m_ar+k] * phb[k*m_br+j];
+            }
+        }
+    }
+
+
+	double sequencial2 = omp_get_wtime();
+
+	cout << "Time Sequencial: " << sequencial2 - sequencial1 << endl;
 
 	free(pha);
 	free(phb);
@@ -350,5 +364,4 @@ int main (int argc, char *argv[])
 	if ( ret != PAPI_OK )
 		std::cout << "FAIL destroy" << endl;
 }
-
 
