@@ -10,7 +10,6 @@ using namespace std;
 
 #define SYSTEMTIME clock_t
 
- 
 void OnMult(int m_ar, int m_br) // realizar a multiplicação de duas matrizes e armazenar o resultado numa outra matriz
 								//m_ar e m_br são as dimensões de cada uma das matrizes
 {
@@ -84,6 +83,96 @@ void OnMult(int m_ar, int m_br) // realizar a multiplicação de duas matrizes e
 	// está a ser Libera a memória previamente alocada para as matrizes A, B e C
 }
 
+void multLineParalel1(int m_ar, int m_br){
+    SYSTEMTIME Time1, Time2;
+
+	char st[100];
+	int i, j, k;
+
+	double *pha, *phb, *phc;
+
+	pha = (double *)malloc((m_ar * m_ar) * sizeof(double));
+	phb = (double *)malloc((m_ar * m_ar) * sizeof(double));
+	phc = (double *)malloc((m_ar * m_ar) * sizeof(double));
+
+	for(i = 0; i < m_ar; i++){
+		for(j = 0; j < m_ar; j++){
+			pha[i*m_ar + j] = (double)1.0; 
+		}
+	}
+
+	for(i = 0; i < m_br; i++){
+		for(j = 0; j < m_br; j++){
+			phb[i * m_br + j] = (double)(i+1);
+		}
+	}
+
+    double time1= omp_get_wtime();
+
+	#pragma omp parallel for
+	for(i = 0; i < m_ar; i++){ 				
+		for(k = 0; k < m_ar; k++){			
+			for(j = 0; j < m_br; j++){		
+				phc[i*m_ar+j] += pha[i*m_ar+k] * phb[k*m_br+j];
+			}
+		}
+	}
+
+	double time2= omp_get_wtime();
+
+	cout << "Time Paralell 1: " << time2-time1 << endl;
+
+    free(pha);
+	free(phb);
+	free(phc);
+}
+
+void multLineParalel2(int m_ar, int m_br){
+    SYSTEMTIME Time1, Time2;
+
+	char st[100];
+	int i, j, k;
+
+	double *pha, *phb, *phc;
+
+	pha = (double *)malloc((m_ar * m_ar) * sizeof(double));
+	phb = (double *)malloc((m_ar * m_ar) * sizeof(double));
+	phc = (double *)malloc((m_ar * m_ar) * sizeof(double));
+
+	for(i = 0; i < m_ar; i++){
+		for(j = 0; j < m_ar; j++){
+			pha[i*m_ar + j] = (double)1.0; 
+		}
+	}
+
+	for(i = 0; i < m_br; i++){
+		for(j = 0; j < m_br; j++){
+			phb[i * m_br + j] = (double)(i+1);
+		}
+	}
+
+    double time1= omp_get_wtime();
+
+	#pragma omp parallel
+	for(i = 0; i < m_ar; i++){ 				
+		for(k = 0; k < m_ar; k++){
+            #pragma omp for			
+			for(j = 0; j < m_br; j++){		
+				phc[i*m_ar+j] += pha[i*m_ar+k] * phb[k*m_br+j];
+			}
+		}
+	}
+
+	double time2= omp_get_wtime();
+
+	cout << "Time Paralell 2: " << time2-time1 << endl;
+
+    free(pha);
+	free(phb);
+	free(phc);
+}
+
+
 // add code here for line x line matriz multiplication
 void OnMultLine(int m_ar, int m_br)
 {
@@ -110,23 +199,6 @@ void OnMultLine(int m_ar, int m_br)
 		}
 	}
 	
-	double time1= omp_get_wtime();
-
-	#pragma omp parallel private(j,k)
-	//tentativa de otimizar a multiplicação de matrizes ao reorganizar os acessos à memória para melhoria a reutilização dos dados
-	for(i = 0; i < m_ar; i++){ 				//Itera sobre as linhas da matriz pha;
-		for(k = 0; k < m_ar; k++){			//Itera sobre as colunas da matriz A e sobre as linhas da matriz B;
-			for(j = 0; j < m_br; j++){		//Itera sobre as colunas da matriz B;
-				phc[i*m_ar+j] += pha[i*m_ar+k] * phb[k*m_br+j];
-				//o resultado do produto é acumulado na matriz C construindo a matriz C, elemento a elemento, linha a linha;
-			}
-		}
-	}
-
-	double time2= omp_get_wtime();
-
-	cout << "Time Paralell: " << time2-time1 << endl;
-
 	double sequencial1 = omp_get_wtime();
 
 	for (int i = 0; i < m_ar; i++) {
@@ -312,6 +384,8 @@ int main (int argc, char *argv[])
 				break;
 			case 2:
 				OnMultLine(lin, col);  
+                multLineParalel1(lin, col);
+                multLineParalel2(lin, col);
 				break;
 			case 3:
 				cout << "Block Size? ";
@@ -364,4 +438,3 @@ int main (int argc, char *argv[])
 	if ( ret != PAPI_OK )
 		std::cout << "FAIL destroy" << endl;
 }
-
