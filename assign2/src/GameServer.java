@@ -3,7 +3,7 @@ import java.net.*;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class GameServer {
+public class GameServer implements Runnable{
 
     private List<Socket> userSockets;
     private int secretNumber;
@@ -13,19 +13,16 @@ public class GameServer {
         this.userSockets = userSockets;
     }
 
-    public void start() {
+    @Override
+    public void run() {
         System.out.println("Starting game with " + userSockets.size() + " players");
         gameRunning = true;
         secretNumber = generateSecretNumber();
 
         try {
-            while (true) {
-                gameRunning = true;
+            while (gameRunning) {
                 for (Socket socket : userSockets) {
                     handlePlayerTurn(socket);
-                }
-                if (!gameRunning) {
-                    break;
                 }
             }
         } catch (IOException e) {
@@ -86,7 +83,8 @@ public class GameServer {
             }
 
             GameServer gameServer = new GameServer(userSockets);
-            gameServer.start();
+            Thread gameThread = new Thread(gameServer);
+            gameThread.start();
 
         } catch (IOException ex) {
             System.out.println("Server exception: " + ex.getMessage());
