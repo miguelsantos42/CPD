@@ -22,6 +22,33 @@ public class GameClient {
 
             BufferedReader userInputReader = new BufferedReader(new InputStreamReader(System.in));
 
+            // Processo de login
+            String fromServer;
+            String fromUser;
+            
+            //username
+            fromServer = reader.readLine();
+            System.out.println(fromServer);
+            fromUser = userInputReader.readLine();
+            writer.println(fromUser);
+            //writer.println(fromUser);
+
+            //password
+            fromServer = reader.readLine();
+            System.out.println(fromServer);
+            fromUser = userInputReader.readLine();
+            writer.println(fromUser);
+
+            // Leitura da resposta do servidor sobre o sucesso do login
+            fromServer = reader.readLine();
+            System.out.println(fromServer);
+            if (fromServer.equals("Invalid login. Try again.")) {
+                System.out.println("Login failed. Please try again.");
+                return; // Se o login falhar, sai do programa
+            } else {
+                System.out.println("Login successful. Starting game...");
+            }
+
             String response;
             boolean gameRunning = true;
 
