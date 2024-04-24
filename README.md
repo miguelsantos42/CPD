@@ -5,7 +5,7 @@ CPD Projects of group T04G14.
 Group members:
 1. Miguel Santos(up202008450@up.pt)
 2. Rafael Cerqueira(up201910200@up.pt)
-3. Gaspar Faria(up202108797@up.pt)
+
 
 # Run Code
 - To run the code you need to compile the GameServer.java and compile the GameClient.java 
