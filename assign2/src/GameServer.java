@@ -6,26 +6,31 @@ import java.nio.file.Paths;
 import java.nio.file.Files;
 import java.util.stream.Stream;
 import java.util.concurrent.ThreadLocalRandom;
-
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 public class GameServer implements Runnable{
 
-    private List<Socket> userSockets;
+    private static List<Socket> userSockets = new ArrayList<>();
     private int secretNumber;
     private boolean gameRunning;
+    private static Lock lock = new ReentrantLock();
+    private static Condition enoughPlayers = lock.newCondition();
+    private static List<Socket> gameSockets = new ArrayList<>();
 
-    public GameServer(List<Socket> userSockets) {
-        this.userSockets = userSockets;
+    public GameServer(List<Socket> gameSockets) {
+        this.gameSockets = gameSockets;
     }
 
     @Override
     public void run() {
-        System.out.println("Starting game with " + userSockets.size() + " players");
+        System.out.println("Starting game with " + gameSockets.size() + " players");
         gameRunning = true;
         secretNumber = generateSecretNumber();
 
         try {
             while (gameRunning) {
-                for (Socket socket : userSockets) {
+                for (Socket socket : gameSockets) {
                     handlePlayerTurn(socket);
                 }
             }
@@ -80,6 +85,57 @@ public class GameServer implements Runnable{
         }
     }
 
+    private static void handleLogin(Socket socket) {
+        try {
+            PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
+            writer.println("Enter username:");
+            String username = reader.readLine();
+            writer.println("Enter password:");
+            String password = reader.readLine();
+
+            if (isValidLogin(username, password)) {
+                System.out.println("User " + username + " logged in successfully.");
+                writer.println("Connected");
+                lock.lock();
+                try {
+                    userSockets.add(socket);
+
+                    if (userSockets.size() == 2) {
+                        enoughPlayers.signal();
+                        startGame();
+                    }
+                } finally {
+                    lock.unlock();
+                }
+
+            } else {
+                writer.println("Invalid login. Try again.");
+                socket.close(); // Close the connection if the login is invalid
+            }
+
+        } catch (IOException e) {
+            System.out.println("Error during login: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private static void startGame(){
+        List<Socket> gameUserSockets = new ArrayList<>(userSockets);
+        GameServer gameServer = new GameServer(gameUserSockets);
+        Thread gameThread = Thread.ofVirtual().start(gameServer);
+        
+        // Remover jogadores da lista após iniciar o jogo
+        lock.lock();
+        try {
+            userSockets.clear();
+            System.out.println("Tamanho do userSockets apos clear = " + userSockets.size());
+        } finally {
+            lock.unlock();
+        }
+    }
+
     public static void main(String[] args) {
         if (args.length < 1) {
             System.out.println("Usage: java GameServer <port>");
@@ -91,39 +147,14 @@ public class GameServer implements Runnable{
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             System.out.println("Server is listening on port " + port);
 
-            List<Socket> userSockets = new ArrayList<>();
-
-            
-            while (userSockets.size() < 2) { // Waiting for at least 2 players to join
+            while(true){
                 Socket socket = serverSocket.accept();
                 System.out.println("New client connected: " + socket);
-                
-                PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
-                BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-
-                writer.println("Enter username:");
-                String username = reader.readLine();
-                writer.println("Enter password:");
-                String password = reader.readLine();
-
-                if (isValidLogin(username, password)) {
-                    System.out.println("User " + username + " logged in successfully.");
-                    writer.println("Connected");
-                    userSockets.add(socket);
-                } else {
-                    writer.println("Invalid login. Try again.");
-                    socket.close(); // Close the connection if the login is invalid
-                }
-            }
-
-            GameServer gameServer = new GameServer(userSockets);
-            Thread gameThread = Thread.ofVirtual().start(gameServer);
-            try {
-                gameThread.join(); // Opcional: espera a thread terminar para manter o processo vivo
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                System.out.println("Main thread was interrupted");
+                // Criar e iniciar uma thread virtual para lidar com o login do usuário
+                Thread.ofVirtual().start(() -> {
+                    handleLogin(socket);
+                });
             }
 
         } catch (IOException ex) {
