@@ -16,7 +16,7 @@ public class GameServer implements Runnable{
     private boolean gameRunning;
     private static Lock lock = new ReentrantLock();
     private static Condition enoughPlayers = lock.newCondition();
-    private static List<Socket> gameSockets = new ArrayList<>();
+    private List<Socket> gameSockets = new ArrayList<>();
     private boolean number_guessed = false;
 
     public GameServer(List<Socket> gameSockets) {
@@ -53,10 +53,16 @@ public class GameServer implements Runnable{
         OutputStream output = socket.getOutputStream();
         PrintWriter writer = new PrintWriter(output, true);
 
-        if(number_guessed==true){
-            writer.println("The other player guessed the number :)");
-            gameRunning = false;
-            return;
+        if (number_guessed) {
+            lock.lock();
+            try {
+                    writer.println("The other player guessed the number :)");
+                    gameRunning = false;
+                    return;
+                
+            } finally {
+                lock.unlock();
+            }
         }
 
         writer.println("Guess the secret number (between 1 and 100):");
@@ -66,18 +72,24 @@ public class GameServer implements Runnable{
 
         int distance = Math.abs(guessedNumber - secretNumber);
 
-        if (guessedNumber == secretNumber) {
-            writer.println("Congratulations! You guessed the secret number.");
-            number_guessed = true;
-            //gameRunning = false;
-            return;
-        } else if(distance <= 5){
-            writer.println("Almost there! Player " + socket + " is very close.");
-        } else if(distance <= 15){
-            writer.println("Close! Player " + socket + " is getting closer.");
-        } else {
-            writer.println("Far! " + socket + " is far from the secret number.");
+        lock.lock();
+        try {
+            if (guessedNumber == secretNumber) {
+                writer.println("Congratulations! You guessed the secret number.");
+                number_guessed = true;
+                //gameRunning = false;
+                return;
+            } else if (distance <= 5) {
+                writer.println("Almost there! Player " + socket + " is very close.");
+            } else if (distance <= 15) {
+                writer.println("Close! Player " + socket + " is getting closer.");
+            } else {
+                writer.println("Far! " + socket + " is far from the secret number.");
+            }
+        } finally {
+            lock.unlock();
         }
+
     }
 
     private static boolean isValidLogin(String username, String password) {
