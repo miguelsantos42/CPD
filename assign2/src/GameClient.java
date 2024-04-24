@@ -59,6 +59,9 @@ public class GameClient {
                 if (response.contains("Guess the secret number")) {
                     String guess = userInputReader.readLine();
                     writer.println(guess);
+                }else if(response.contains("The other player guessed the number :)")){
+                    gameRunning = false;
+                    break;
                 }
 
                 response = reader.readLine();

@@ -17,6 +17,7 @@ public class GameServer implements Runnable{
     private static Lock lock = new ReentrantLock();
     private static Condition enoughPlayers = lock.newCondition();
     private static List<Socket> gameSockets = new ArrayList<>();
+    private boolean number_guessed = false;
 
     public GameServer(List<Socket> gameSockets) {
         this.gameSockets = gameSockets;
@@ -52,6 +53,12 @@ public class GameServer implements Runnable{
         OutputStream output = socket.getOutputStream();
         PrintWriter writer = new PrintWriter(output, true);
 
+        if(number_guessed==true){
+            writer.println("The other player guessed the number :)");
+            gameRunning = false;
+            return;
+        }
+
         writer.println("Guess the secret number (between 1 and 100):");
         
         String guess = reader.readLine();
@@ -61,7 +68,8 @@ public class GameServer implements Runnable{
 
         if (guessedNumber == secretNumber) {
             writer.println("Congratulations! You guessed the secret number.");
-            gameRunning = false;
+            number_guessed = true;
+            //gameRunning = false;
             return;
         } else if(distance <= 5){
             writer.println("Almost there! Player " + socket + " is very close.");
