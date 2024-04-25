@@ -18,14 +18,18 @@ public class GameServer implements Runnable{
     private static Condition enoughPlayers = lock.newCondition();
     private List<Socket> gameSockets = new ArrayList<>();
     private boolean number_guessed = false;
+    private static Map<Socket, UUID> sessionTokens = new HashMap<>();
+    private Map<Socket, UUID> gameSessionTokens = new HashMap<>();
 
-    public GameServer(List<Socket> gameSockets) {
+    public GameServer(List<Socket> gameSockets, Map<Socket, UUID> gameSessionTokens) {
         this.gameSockets = gameSockets;
+        this.gameSessionTokens = gameSessionTokens;
     }
 
     @Override
     public void run() {
         System.out.println("Starting game with " + gameSockets.size() + " players");
+        System.out.println("Game session tokens : " + gameSessionTokens);
         gameRunning = true;
         secretNumber = generateSecretNumber();
 
@@ -39,6 +43,10 @@ public class GameServer implements Runnable{
             System.out.println("Error during game: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    private static UUID generateSessionToken() {
+        return UUID.randomUUID();
     }
 
     private int generateSecretNumber() {
@@ -116,8 +124,10 @@ public class GameServer implements Runnable{
             String password = reader.readLine();
 
             if (isValidLogin(username, password)) {
+                UUID sessionToken = generateSessionToken();
+                sessionTokens.put(socket, sessionToken);
                 System.out.println("User " + username + " logged in successfully.");
-                writer.println("Connected");
+                writer.println("Connected " + sessionToken);
                 lock.lock();
                 try {
                     userSockets.add(socket);
@@ -143,14 +153,17 @@ public class GameServer implements Runnable{
 
     private static void startGame(){
         List<Socket> gameUserSockets = new ArrayList<>(userSockets);
-        GameServer gameServer = new GameServer(gameUserSockets);
+        Map<Socket, UUID> gameTokens = new HashMap<>(sessionTokens);
+        GameServer gameServer = new GameServer(gameUserSockets, gameTokens);
         Thread gameThread = Thread.ofVirtual().start(gameServer);
         
         // Remover jogadores da lista após iniciar o jogo
         lock.lock();
         try {
             userSockets.clear();
+            sessionTokens.clear();
             System.out.println("Tamanho do userSockets apos clear = " + userSockets.size());
+            System.out.println("Session tokens = " + sessionTokens);
         } finally {
             lock.unlock();
         }
