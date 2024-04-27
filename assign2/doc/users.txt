@@ -1,4 +1,4 @@
-rafa:password123
-miguel:password123
-roberto:password123
-gilberto:password123
+r:p
+m:p
+q:p
+g:p
