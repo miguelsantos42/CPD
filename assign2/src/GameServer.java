@@ -5,13 +5,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.Files;
 import java.util.stream.Stream;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 public class GameServer{
 
     private static List<Player> usersList = new ArrayList<>();
+    private static List<Game> gamesList = new ArrayList<>();
     private static Lock lock = new ReentrantLock();
     private static Condition enoughPlayers = lock.newCondition();
 
@@ -46,9 +46,33 @@ public class GameServer{
             if (isValidLogin(username, password)) {
                 UUID sessionToken = generateSessionToken();
                 System.out.println("User " + username + " logged in successfully.");
-                writer.println("Connected " + sessionToken);
                 lock.lock();
                 try {
+                    for (Game game : gamesList) {
+                        for (Player player : game.getPlayers()) {
+                            if (player.getUsername().equals(username)) {
+                                if (player.isDisconnected()) {
+                                    player.setSocket(socket);
+                                    player.setUserToken(sessionToken);
+                                    player.setDisconnected(false);
+                                    game.signalReconnect();
+                                    writer.println("Player reconnected to game.");
+                                    return;
+                                }
+                                writer.println("Player already connected.");
+                                socket.close();
+                                return;
+                            }
+                        }
+                    }
+                    for (Player player : usersList) {
+                        if (player.getUsername().equals(username)) {
+                            writer.println("Player already connected.");
+                            socket.close();
+                            return;
+                        }
+                    }
+                    writer.println("Connected " + sessionToken);
                     usersList.add(new Player(socket, username, sessionToken));
                     if (usersList.size() == 2) {
                         enoughPlayers.signal();
@@ -70,12 +94,12 @@ public class GameServer{
     }
 
     private static void startGame(){
-        List<Player> usersListTemp = new ArrayList<>(usersList); 
+        List<Player> usersListTemp = new ArrayList<>(usersList);
         Game game = new Game(usersListTemp);
-        
         // Remover jogadores da lista após iniciar o jogo
         lock.lock();
         try {
+            gamesList.add(game);
             usersList.clear();
         } finally {
             lock.unlock();

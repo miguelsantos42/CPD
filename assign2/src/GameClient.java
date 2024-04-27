@@ -45,7 +45,11 @@ public class GameClient {
             if (fromServer.equals("Invalid login. Try again.")) {
                 System.out.println("Login failed. Please try again.");
                 return; // Se o login falhar, sai do programa
-            } else {
+            } else if(fromServer.equals("Player already connected.")) {
+                return;
+            } else if(fromServer.equals("Player reconnected successfully.")){
+            } 
+            else {
                 System.out.println("Login successful. Starting game...");
             }
 
@@ -57,9 +61,17 @@ public class GameClient {
                 System.out.println(response);
 
                 if (response.contains("Guess the secret number")) {
-                    String guess = userInputReader.readLine();
-                    writer.println(guess);
-                }else if(response.contains("The other player guessed the number :)")){
+                    String guess;
+                    int guessedNumber = -1;
+                    do {
+                        try {
+                            guess = userInputReader.readLine();
+                            guessedNumber = Integer.parseInt(guess);
+                        } catch (Exception e) {}
+                        System.out.println("Invalid input. Please enter a number between 1 and 100:");
+                    } while (guessedNumber < 1 || guessedNumber > 100);
+                    writer.println(String.valueOf(guessedNumber));
+                }else if(response.contains("The other player guessed the number :)") || response.contains("The other player was disconnected you won :)")){
                     gameRunning = false;
                     break;
                 }

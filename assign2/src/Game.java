@@ -4,29 +4,25 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
-import java.net.Socket;
-import java.net.SocketTimeoutException;
 import java.util.List;
-import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.TimeUnit;
 
 public class Game extends Thread{
     private List<Player> players;
-    private UUID gameSessionToken;
     private int secretNumber;
     private boolean gameRunning; 
     private boolean number_guessed;
-    private static Lock lock = new ReentrantLock();
+    private CountDownLatch lockObject = new CountDownLatch(1);
 
 
     public Game(List<Player> players) {
         this.players = players;
         this.secretNumber = generateSecretNumber();
-        this.gameSessionToken = generateSessionToken();
         this.gameRunning = true; 
         this.number_guessed = false;
+
         this.start();
     }
 
@@ -36,27 +32,23 @@ public class Game extends Thread{
         return number;
     }
 
-    private static UUID generateSessionToken() {
-        return UUID.randomUUID();
-    }
-
-    private void handlePlayerTurn(Socket socket) throws IOException {
-        socket.setSoTimeout(30000);
-        InputStream input = socket.getInputStream();
+    private synchronized void handlePlayerTurn(Player player) throws IOException {
+        InputStream input = player.getSocket().getInputStream();
         BufferedReader reader = new BufferedReader(new InputStreamReader(input));
-        OutputStream output = socket.getOutputStream();
+        OutputStream output = player.getSocket().getOutputStream();
         PrintWriter writer = new PrintWriter(output, true);
 
         if (number_guessed) {
-            lock.lock();
-            try {
-                    writer.println("The other player guessed the number :)");
+            for (Player p : players) {
+                if (p.isDisconnected()){
+                    writer.println("The other player was disconnected you won :)");
                     gameRunning = false;
                     return;
-                
-            } finally {
-                lock.unlock();
+                }
             }
+            writer.println("The other player guessed the number :)");
+            gameRunning = false;
+            return;
         }
 
         writer.println("Guess the secret number (between 1 and 100):");
@@ -65,43 +57,59 @@ public class Game extends Thread{
         try{
             String guess = reader.readLine();
             int guessedNumber = Integer.parseInt(guess);
-            socket.setSoTimeout(0);
             distance = Math.abs(guessedNumber - secretNumber);
-        } catch(SocketTimeoutException e) {
-            writer.println("You took to long to play!!! Passing to the other Player!");
-            return;
-        }
-
-        
-        lock.lock();
-        try {
-            if (distance == 0) {
-                writer.println("Congratulations! You guessed the secret number.");
-                number_guessed = true;
-                //gameRunning = false;
-                return;
-            } else if (distance <= 5) {
-                writer.println("Almost there! Player " + socket + " is very close.");
-            } else if (distance <= 15) {
-                writer.println("Close! Player " + socket + " is getting closer.");
-            } else {
-                writer.println("Far! " + socket + " is far from the secret number.");
+        } catch(Exception e) {
+            System.out.println("Player disconnected waiting for reconnection");
+            player.setDisconnected(true);
+            try{
+                if(lockObject.await(10, TimeUnit.SECONDS)){
+                    System.out.println("Player reconnected");
+                    lockObject = new CountDownLatch(1);
+                    handlePlayerTurn(player);
+                    return;
+                } else {
+                    System.out.println("Player failed to reconnect on time, other player wins");
+                    number_guessed = true;
+                    return;
+                }
+            } catch (InterruptedException e1) {
+                e1.printStackTrace();
             }
-        } finally {
-            lock.unlock();
+        }
+        
+        if (distance == 0) {
+            writer.println("Congratulations! You guessed the secret number.");
+            number_guessed = true;
+            return;
+        } else if (distance <= 5) {
+            writer.println("Almost there! Player " + player.getSocket() + " is very close.");
+        } else if (distance <= 15) {
+            writer.println("Close! Player " + player.getSocket() + " is getting closer.");
+        } else {
+            writer.println("Far! " + player.getSocket() + " is far from the secret number.");
         }
 
+    }
+
+    List<Player> getPlayers() {
+        return players;
+    }
+
+    void signalReconnect() {
+        lockObject.countDown();
     }
 
     @Override
     public void run() {
         System.out.println("Starting game with " + players.size() + " players");
-        System.out.println("Game session tokens : " + gameSessionToken);
 
         try {
-            while (gameRunning) {
+            while (true) {
                 for (Player player : players) {
-                    handlePlayerTurn(player.getSocket());
+                    handlePlayerTurn(player);
+                    if(!gameRunning) {
+                        return;
+                    }
                 }
             }
         } catch (IOException e) {

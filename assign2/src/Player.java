@@ -11,6 +11,7 @@ public class Player {
         this.socket = socket;
         this.username = username;
         this.userToken = userToken;
+        this.disconnected = false;
     }
 
     public Socket getSocket() {
@@ -29,11 +30,11 @@ public class Player {
         this.username = username;
     }
 
-    public boolean isDisconnected() {
+    public synchronized boolean isDisconnected() {
         return disconnected;
     }
 
-    public void setDisconnected(boolean disconnected) {
+    public synchronized void setDisconnected(boolean disconnected) {
         this.disconnected = disconnected;
     }
 
@@ -44,8 +45,5 @@ public class Player {
     public void setUserToken(UUID userToken) {
         this.userToken = userToken;
     }
-
-    
-
 
 }
