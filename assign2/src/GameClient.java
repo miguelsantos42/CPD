@@ -63,13 +63,19 @@ public class GameClient {
                 if (response.contains("Guess the secret number")) {
                     String guess;
                     int guessedNumber = -1;
-                    do {
+                    while(true){
                         try {
                             guess = userInputReader.readLine();
                             guessedNumber = Integer.parseInt(guess);
-                        } catch (Exception e) {}
-                        System.out.println("Invalid input. Please enter a number between 1 and 100:");
-                    } while (guessedNumber < 1 || guessedNumber > 100);
+                            if(guessedNumber < 1 || guessedNumber > 100){
+                                System.out.println("Invalid input. Please enter a number between 1 and 100:");
+                            }else{
+                                break;
+                            }
+                        } catch (Exception e) {
+                            System.out.println("Invalid input. Please enter a number between 1 and 100:");
+                        }
+                    }
                     writer.println(String.valueOf(guessedNumber));
                 }else if(response.contains("The other player guessed the number :)") || response.contains("The other player was disconnected you won :)")){
                     gameRunning = false;

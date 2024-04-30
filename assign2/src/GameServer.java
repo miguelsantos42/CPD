@@ -48,6 +48,13 @@ public class GameServer{
                 System.out.println("User " + username + " logged in successfully.");
                 lock.lock();
                 try {
+                    for (int i = 0; i < gamesList.size(); i++) {
+                        Game game = gamesList.get(i);
+                        if (!game.isGameRunning()) {
+                            gamesList.remove(i); // Remove o jogo da lista
+                            i--; // Decrementa o índice para ajustar a remoção
+                        }
+                    }
                     for (Game game : gamesList) {
                         for (Player player : game.getPlayers()) {
                             if (player.getUsername().equals(username)) {
@@ -78,6 +85,7 @@ public class GameServer{
                         enoughPlayers.signal();
                         startGame();
                     }
+
                 } finally {
                     lock.unlock();
                 }

@@ -22,7 +22,6 @@ public class Game extends Thread{
         this.secretNumber = generateSecretNumber();
         this.gameRunning = true; 
         this.number_guessed = false;
-
         this.start();
     }
 
@@ -62,7 +61,7 @@ public class Game extends Thread{
             System.out.println("Player disconnected waiting for reconnection");
             player.setDisconnected(true);
             try{
-                if(lockObject.await(10, TimeUnit.SECONDS)){
+                if(lockObject.await(100, TimeUnit.SECONDS)){
                     System.out.println("Player reconnected");
                     lockObject = new CountDownLatch(1);
                     handlePlayerTurn(player);
@@ -99,6 +98,10 @@ public class Game extends Thread{
         lockObject.countDown();
     }
 
+    boolean isGameRunning(){
+        return gameRunning;
+    }
+
     @Override
     public void run() {
         System.out.println("Starting game with " + players.size() + " players");
@@ -108,6 +111,7 @@ public class Game extends Thread{
                 for (Player player : players) {
                     handlePlayerTurn(player);
                     if(!gameRunning) {
+                        players.clear();
                         return;
                     }
                 }
