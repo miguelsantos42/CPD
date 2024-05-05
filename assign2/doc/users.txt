@@ -1,2 +1,4 @@
-rafa:password123
-miguel:password123
+r:p
+m:p
+q:p
+g:p

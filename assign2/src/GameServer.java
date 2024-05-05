@@ -5,91 +5,19 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.Files;
 import java.util.stream.Stream;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-public class GameServer implements Runnable{
+public class GameServer{
 
-    private static List<Socket> userSockets = new ArrayList<>();
-    private int secretNumber;
-    private boolean gameRunning;
+    private static List<Player> usersList = new ArrayList<>();
+    private static List<Game> gamesList = new ArrayList<>();
     private static Lock lock = new ReentrantLock();
     private static Condition enoughPlayers = lock.newCondition();
-    private List<Socket> gameSockets = new ArrayList<>();
-    private boolean number_guessed = false;
 
-    public GameServer(List<Socket> gameSockets) {
-        this.gameSockets = gameSockets;
-    }
 
-    @Override
-    public void run() {
-        System.out.println("Starting game with " + gameSockets.size() + " players");
-        gameRunning = true;
-        secretNumber = generateSecretNumber();
-
-        try {
-            while (gameRunning) {
-                for (Socket socket : gameSockets) {
-                    handlePlayerTurn(socket);
-                }
-            }
-        } catch (IOException e) {
-            System.out.println("Error during game: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    private int generateSecretNumber() {
-        int number = ThreadLocalRandom.current().nextInt(1, 101); // Generates a random number between 1 and 100
-        System.out.println("The secret number is: " + number);
-        return number;
-    }
-
-    private void handlePlayerTurn(Socket socket) throws IOException {
-        InputStream input = socket.getInputStream();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(input));
-        OutputStream output = socket.getOutputStream();
-        PrintWriter writer = new PrintWriter(output, true);
-
-        if (number_guessed) {
-            lock.lock();
-            try {
-                    writer.println("The other player guessed the number :)");
-                    gameRunning = false;
-                    return;
-                
-            } finally {
-                lock.unlock();
-            }
-        }
-
-        writer.println("Guess the secret number (between 1 and 100):");
-        
-        String guess = reader.readLine();
-        int guessedNumber = Integer.parseInt(guess);
-
-        int distance = Math.abs(guessedNumber - secretNumber);
-
-        lock.lock();
-        try {
-            if (guessedNumber == secretNumber) {
-                writer.println("Congratulations! You guessed the secret number.");
-                number_guessed = true;
-                //gameRunning = false;
-                return;
-            } else if (distance <= 5) {
-                writer.println("Almost there! Player " + socket + " is very close.");
-            } else if (distance <= 15) {
-                writer.println("Close! Player " + socket + " is getting closer.");
-            } else {
-                writer.println("Far! " + socket + " is far from the secret number.");
-            }
-        } finally {
-            lock.unlock();
-        }
-
+    private static UUID generateSessionToken() {
+        return UUID.randomUUID();
     }
 
     private static boolean isValidLogin(String username, String password) {
@@ -116,16 +44,48 @@ public class GameServer implements Runnable{
             String password = reader.readLine();
 
             if (isValidLogin(username, password)) {
+                UUID sessionToken = generateSessionToken();
                 System.out.println("User " + username + " logged in successfully.");
-                writer.println("Connected");
                 lock.lock();
                 try {
-                    userSockets.add(socket);
-
-                    if (userSockets.size() == 2) {
+                    for (int i = 0; i < gamesList.size(); i++) {
+                        Game game = gamesList.get(i);
+                        if (!game.isGameRunning()) {
+                            gamesList.remove(i); // Remove o jogo da lista
+                            i--; // Decrementa o índice para ajustar a remoção
+                        }
+                    }
+                    for (Game game : gamesList) {
+                        for (Player player : game.getPlayers()) {
+                            if (player.getUsername().equals(username)) {
+                                if (player.isDisconnected()) {
+                                    player.setSocket(socket);
+                                    player.setUserToken(sessionToken);
+                                    player.setDisconnected(false);
+                                    game.signalReconnect();
+                                    writer.println("Player reconnected to game.");
+                                    return;
+                                }
+                                writer.println("Player already connected.");
+                                socket.close();
+                                return;
+                            }
+                        }
+                    }
+                    for (Player player : usersList) {
+                        if (player.getUsername().equals(username)) {
+                            writer.println("Player already connected.");
+                            socket.close();
+                            return;
+                        }
+                    }
+                    writer.println("Connected " + sessionToken);
+                    usersList.add(new Player(socket, username, sessionToken));
+                    if (usersList.size() == 2) {
                         enoughPlayers.signal();
                         startGame();
                     }
+
                 } finally {
                     lock.unlock();
                 }
@@ -142,15 +102,13 @@ public class GameServer implements Runnable{
     }
 
     private static void startGame(){
-        List<Socket> gameUserSockets = new ArrayList<>(userSockets);
-        GameServer gameServer = new GameServer(gameUserSockets);
-        Thread gameThread = Thread.ofVirtual().start(gameServer);
-        
+        List<Player> usersListTemp = new ArrayList<>(usersList);
+        Game game = new Game(usersListTemp);
         // Remover jogadores da lista após iniciar o jogo
         lock.lock();
         try {
-            userSockets.clear();
-            System.out.println("Tamanho do userSockets apos clear = " + userSockets.size());
+            gamesList.add(game);
+            usersList.clear();
         } finally {
             lock.unlock();
         }
