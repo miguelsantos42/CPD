@@ -11,9 +11,10 @@ import java.util.concurrent.locks.ReentrantLock;
 public class GameServer{
 
     private static List<Player> usersList = new ArrayList<>();
-    private static List<Game> gamesList = new ArrayList<>();
     private static Lock lock = new ReentrantLock();
     private static Condition enoughPlayers = lock.newCondition();
+    private static GameList gamesList = new GameList();
+    private static GameQueue gameQueue = new GameQueue(gamesList);
 
 
     private static UUID generateSessionToken() {
@@ -55,7 +56,8 @@ public class GameServer{
                             i--; // Decrementa o índice para ajustar a remoção
                         }
                     }
-                    for (Game game : gamesList) {
+                    for (int i = 0; i < gamesList.size(); i++) {
+                        Game game = gamesList.get(i);
                         for (Player player : game.getPlayers()) {
                             if (player.getUsername().equals(username)) {
                                 if (player.isDisconnected()) {
@@ -80,12 +82,19 @@ public class GameServer{
                         }
                     }
                     writer.println("Connected " + sessionToken);
-                    usersList.add(new Player(socket, username, sessionToken));
-                    if (usersList.size() == 2) {
-                        enoughPlayers.signal();
-                        startGame();
+                    // Choosing game mode
+                    String gameMode = reader.readLine();
+                    if (gameMode.equals("1")){
+                        usersList.add(new Player(socket, username, sessionToken));
+                        writer.println("Joined the casual game queue.");
+                        if (usersList.size() == 2) {
+                            enoughPlayers.signal();
+                            startGame();
+                        }
+                    } else if (gameMode.equals("2")){
+                        writer.println("Joined the ranked queue.");
+                        gameQueue.push(new Player(socket, username, sessionToken));
                     }
-
                 } finally {
                     lock.unlock();
                 }
@@ -103,11 +112,11 @@ public class GameServer{
 
     private static void startGame(){
         List<Player> usersListTemp = new ArrayList<>(usersList);
-        Game game = new Game(usersListTemp);
+        Game game = new Game(usersListTemp, false);
         // Remover jogadores da lista após iniciar o jogo
+        gamesList.add(game);
         lock.lock();
         try {
-            gamesList.add(game);
             usersList.clear();
         } finally {
             lock.unlock();

@@ -15,13 +15,15 @@ public class Game extends Thread{
     private boolean gameRunning; 
     private boolean number_guessed;
     private CountDownLatch lockObject = new CountDownLatch(1);
+    private boolean ranked;
 
 
-    public Game(List<Player> players) {
+    public Game(List<Player> players, boolean ranked) {
         this.players = players;
         this.secretNumber = generateSecretNumber();
         this.gameRunning = true; 
         this.number_guessed = false;
+        this.ranked = ranked;
         this.start();
     }
 
@@ -41,6 +43,7 @@ public class Game extends Thread{
             for (Player p : players) {
                 if (p.isDisconnected()){
                     writer.println("The other player was disconnected you won :)");
+                    if(ranked) player.setRank(player.getRank() + 1);
                     gameRunning = false;
                     return;
                 }
@@ -78,6 +81,7 @@ public class Game extends Thread{
         
         if (distance == 0) {
             writer.println("Congratulations! You guessed the secret number.");
+            if(ranked) player.setRank(player.getRank() + 1);
             number_guessed = true;
             return;
         } else if (distance <= 5) {
@@ -119,6 +123,11 @@ public class Game extends Thread{
         } catch (IOException e) {
             System.out.println("Error during game: " + e.getMessage());
             e.printStackTrace();
+        } finally {
+            if(ranked){
+                System.out.println("Saving scores...");
+                //todo save scores
+            }
         }
     }
 }

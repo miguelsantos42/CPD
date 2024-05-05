@@ -51,6 +51,20 @@ public class GameClient {
             } 
             else {
                 System.out.println("Login successful. Starting game...");
+                System.out.println("Which game do you want to play? (1 - Casual, 2 - Ranked): ");
+                while(true){
+                    String gameMode = userInputReader.readLine();
+                    if (gameMode.equals("1")) {
+                        writer.println("1");
+                        break;
+                    } else if (gameMode.equals("2")) {
+                        writer.println("2");
+                        break;
+                    } else {
+                        System.out.println("Invalid input. Please enter 1 or 2.");
+                    }
+                }
+                System.out.println(reader.readLine());
             }
 
             String response;
