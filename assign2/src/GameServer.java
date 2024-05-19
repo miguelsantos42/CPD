@@ -84,26 +84,10 @@ public class GameServer {
                         }
                     }
 
-                    writer.println("Login successful. Which game do you want to play? (1 - Casual, 2 - Ranked):");
-                    String gameMode = reader.readLine();
+                    Thread.ofVirtual().start(() -> {
+                        processGameModeSelection(socket, writer, reader, username, sessionToken);
+                    });
 
-                    if (gameMode.equals("1")) {
-                        writer.println("Joined the casual game queue.");
-                        casualQueue.add(new Player(socket, username, sessionToken));
-                        if (casualQueue.size() >= 2) {
-                            startGame(casualQueue);
-                        }
-                    } else if (gameMode.equals("2")) {
-                        writer.println("Joined the ranked game queue.");
-                        rankedQueue.add(new Player(socket, username, sessionToken));
-                        if (rankedQueue.size() >= 2) {
-                            startGame(rankedQueue);
-                        }
-                    } else {
-                        writer.println("Invalid game mode. Connection closing.");
-                        socket.close();
-                        return;
-                    }
 
                 } finally {
                     lock.unlock();
@@ -119,6 +103,45 @@ public class GameServer {
             e.printStackTrace();
         }
     }
+
+    private static void processGameModeSelection(Socket socket, PrintWriter writer, BufferedReader reader, String username, UUID sessionToken){
+        try{
+        writer.println("Login successful. Which game do you want to play? (1 - Casual, 2 - Ranked):");
+        String gameMode = reader.readLine();
+        lock.lock();
+        try{
+            if (gameMode.equals("1")) {
+            writer.println("Joined the casual game queue.");
+            casualQueue.add(new Player(socket, username, sessionToken));
+                if (casualQueue.size() >= 2) {
+                    Thread.ofVirtual().start(() -> {
+                        startGame(casualQueue);
+                    });
+                }
+            } else if (gameMode.equals("2")) {
+                writer.println("Joined the ranked game queue.");
+                rankedQueue.add(new Player(socket, username, sessionToken));
+                if (rankedQueue.size() >= 2) {
+                    Thread.ofVirtual().start(() -> {
+                        startGame(rankedQueue);
+                    });
+                }
+            } else {
+                writer.println("Invalid game mode. Connection closing.");
+                socket.close();
+                return;
+            }
+        } finally{
+            lock.unlock();
+        }
+        }catch (IOException e) {
+            System.out.println("Error during login: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        
+    }
+
 
     private static void startGame(List<Player> queue) {
         List<Player> players = new ArrayList<>(queue.subList(0, 2));
