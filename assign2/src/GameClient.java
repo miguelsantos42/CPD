@@ -38,7 +38,7 @@ public class GameClient {
             System.out.println(fromServer);
             fromUser = userInputReader.readLine();
             writer.println(fromUser);
-
+            //todo add logic to reconect
             // Leitura da resposta do servidor sobre o sucesso do login
             fromServer = reader.readLine();
             System.out.println(fromServer);
@@ -47,7 +47,7 @@ public class GameClient {
                 return; // Se o login falhar, sai do programa
             } else if(fromServer.equals("Player already connected.")) {
                 return;
-            } else if(fromServer.equals("Player reconnected successfully.")){
+            } else if(fromServer.equals("Player reconnected to game.")){
             } 
             else {
                 System.out.println("Login successful. Starting game...");

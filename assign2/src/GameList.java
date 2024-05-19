@@ -45,4 +45,13 @@ class GameList {
             lock.unlock();
         }
     }
+
+    public void remove(Game game) {
+        lock.lock();
+        try {
+            gamesList.remove(game);
+        } finally {
+            lock.unlock();
+        }
+    }
 }

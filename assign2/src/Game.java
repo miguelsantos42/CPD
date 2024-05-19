@@ -5,30 +5,35 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
+import java.util.Random;
+
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class Game extends Thread{
     private List<Player> players;
     private int secretNumber;
     private boolean gameRunning; 
     private boolean number_guessed;
-    private CountDownLatch lockObject = new CountDownLatch(1);
-    private boolean ranked;
+    private boolean isRanked;
+  
+    private Lock lock = new ReentrantLock();
+    private Condition playerReconnected = lock.newCondition();
 
 
-    public Game(List<Player> players, boolean ranked) {
+    public Game(List<Player> players, boolean isRanked) {
         this.players = players;
         this.secretNumber = generateSecretNumber();
         this.gameRunning = true; 
         this.number_guessed = false;
-        this.ranked = ranked;
+        this.isRanked = isRanked;
         this.start();
     }
 
     private int generateSecretNumber() {
-        int number = ThreadLocalRandom.current().nextInt(1, 101); // Generates a random number between 1 and 100
+        Random random = new Random();
+        int number = random.nextInt(100); // Generates a random number between 1 and 100
         System.out.println("The secret number is: " + number);
         return number;
     }
@@ -43,7 +48,6 @@ public class Game extends Thread{
             for (Player p : players) {
                 if (p.isDisconnected()){
                     writer.println("The other player was disconnected you won :)");
-                    if(ranked) player.setRank(player.getRank() + 1);
                     gameRunning = false;
                     return;
                 }
@@ -56,32 +60,43 @@ public class Game extends Thread{
         writer.println("Guess the secret number (between 1 and 100):");
         int distance = 0;
 
-        try{
+        try {
             String guess = reader.readLine();
             int guessedNumber = Integer.parseInt(guess);
             distance = Math.abs(guessedNumber - secretNumber);
-        } catch(Exception e) {
+        } catch (Exception e) {
             System.out.println("Player disconnected waiting for reconnection");
             player.setDisconnected(true);
-            try{
-                if(lockObject.await(100, TimeUnit.SECONDS)){
+        
+            lock.lock();
+            try {
+                long timeoutInNanos = 20L * 1_000_000_000L;
+                long remainingNanos = timeoutInNanos;
+                boolean reconnected = false;
+                while (remainingNanos > 0 && player.isDisconnected()) {
+                    remainingNanos = playerReconnected.awaitNanos(remainingNanos);
+                    if (!player.isDisconnected()) {
+                        reconnected = true;
+                        break;
+                    }
+                }
+                if (reconnected){
                     System.out.println("Player reconnected");
-                    lockObject = new CountDownLatch(1);
                     handlePlayerTurn(player);
                     return;
                 } else {
                     System.out.println("Player failed to reconnect on time, other player wins");
                     number_guessed = true;
-                    return;
                 }
             } catch (InterruptedException e1) {
                 e1.printStackTrace();
+            } finally {
+                lock.unlock();
             }
         }
         
         if (distance == 0) {
             writer.println("Congratulations! You guessed the secret number.");
-            if(ranked) player.setRank(player.getRank() + 1);
             number_guessed = true;
             return;
         } else if (distance <= 5) {
@@ -98,18 +113,22 @@ public class Game extends Thread{
         return players;
     }
 
-    void signalReconnect() {
-        lockObject.countDown();
-    }
 
     boolean isGameRunning(){
         return gameRunning;
     }
 
+    void signalReconnect() {
+        lock.lock();
+        try {
+            playerReconnected.signal();
+        } finally {
+            lock.unlock();
+        }
+    }
+
     @Override
     public void run() {
-        System.out.println("Starting game with " + players.size() + " players");
-
         try {
             while (true) {
                 for (Player player : players) {
@@ -124,9 +143,9 @@ public class Game extends Thread{
             System.out.println("Error during game: " + e.getMessage());
             e.printStackTrace();
         } finally {
-            if(ranked){
-                System.out.println("Saving scores...");
-                //todo save scores
+            if (isRanked){
+                System.out.println("Game ended, ranking players");
+                //todo set palyer ranks
             }
         }
     }
