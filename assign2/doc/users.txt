@@ -2,3 +2,5 @@ r:p
 m:p
 q:p
 g:p
+f:p
+j:p
