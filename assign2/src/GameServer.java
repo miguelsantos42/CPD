@@ -84,7 +84,9 @@ public class GameServer{
                     usersList.add(new Player(socket, username, sessionToken));
                     if (usersList.size() == 2) {
                         enoughPlayers.signal();
-                        startGame();
+                        Thread.ofVirtual().start(() -> {
+                            startGame();
+                        });
                     }
 
                 } finally {

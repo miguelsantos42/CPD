@@ -68,7 +68,7 @@ public class Game extends Thread{
         
             lock.lock();
             try {
-                long timeoutInNanos = 10L * 1_000_000_000L;
+                long timeoutInNanos = 100L * 1_000_000_000L;
                 long remainingNanos = timeoutInNanos;
                 boolean reconnected = false;
                 while (remainingNanos > 0 && player.isDisconnected()) {
