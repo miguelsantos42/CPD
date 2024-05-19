@@ -49,8 +49,6 @@ public class GameClient {
             } else if (fromServer.equals("Player reconnected successfully.")) {
                 // O jogador foi reconectado com sucesso
             } else {
-                System.out.println("Login successful. Starting game...");
-                System.out.println("Which game do you want to play? (1 - Casual, 2 - Ranked): ");
                 while (true) {
                     String gameMode = userInputReader.readLine();
                     if (gameMode.equals("1")) {
@@ -66,14 +64,18 @@ public class GameClient {
                 System.out.println(reader.readLine());
             }
 
+            
             String response;
             boolean gameRunning = true;
-
+            
             while (gameRunning) {
                 response = reader.readLine();
                 System.out.println(response);
 
-                if (response.contains("Guess the secret number")) {
+                if(response.contains("Game has started!")){
+                    continue;
+                }else if (response.contains("Guess the secret number")) {
+
                     String guess;
                     int guessedNumber = -1;
                     while (true) {

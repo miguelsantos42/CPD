@@ -129,6 +129,10 @@ public class Game extends Thread{
     public void run() {
         System.out.println("Starting game with " + players.size() + " players");
 
+        for (Player player : players) {
+            player.getWriter().println("Game has started!");
+        }
+
         try {
             while (true) {
                 for (Player player : players) {
