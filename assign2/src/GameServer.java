@@ -87,8 +87,6 @@ public class GameServer {
                     Thread.ofVirtual().start(() -> {
                         processGameModeSelection(socket, writer, reader, username, sessionToken);
                     });
-
-
                 } finally {
                     lock.unlock();
                 }
@@ -103,6 +101,7 @@ public class GameServer {
             e.printStackTrace();
         }
     }
+
 
     private static void processGameModeSelection(Socket socket, PrintWriter writer, BufferedReader reader, String username, UUID sessionToken){
         try{
@@ -141,7 +140,6 @@ public class GameServer {
 
         
     }
-
 
     private static void startGame(List<Player> queue) {
         List<Player> players = new ArrayList<>(queue.subList(0, 2));

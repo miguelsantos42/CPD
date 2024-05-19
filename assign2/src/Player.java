@@ -4,7 +4,6 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.IOException;
 
-
 public class Player {
     private Socket socket;
     private String username;
@@ -12,14 +11,12 @@ public class Player {
     private UUID userToken;
     private PrintWriter writer;
 
-
     public Player(Socket socket, String username, UUID userToken) throws IOException{
         this.socket = socket;
         this.username = username;
         this.userToken = userToken;
         this.disconnected = false;
         this.writer = new PrintWriter(socket.getOutputStream(), true);
-
     }
 
     public Socket getSocket() {
@@ -29,7 +26,6 @@ public class Player {
     public void setSocket(Socket socket) throws IOException{
         this.socket = socket;
         this.writer = new PrintWriter(socket.getOutputStream(), true);
-
     }
 
     public String getUsername() {
@@ -59,6 +55,5 @@ public class Player {
     public PrintWriter getWriter() {
         return writer;
     }
-
 
 }

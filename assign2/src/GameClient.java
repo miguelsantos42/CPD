@@ -43,23 +43,46 @@ public class GameClient {
                 fromUser = userInputReader.readLine();
                 writer.println(fromUser);
 
-                // password
-                fromServer = reader.readLine();
-                System.out.println(fromServer);
-                fromUser = userInputReader.readLine();
-                writer.println(fromUser);
+            // Leitura da resposta do servidor sobre o sucesso do login
+            fromServer = reader.readLine();
+            System.out.println(fromServer);
+            if (fromServer.equals("Invalid login. Try again.")) {
+                System.out.println("Login failed. Please try again.");
+                return; // Se o login falhar, sai do programa
+            } else if (fromServer.equals("Player already connected.")) {
+                return;
+            } else if (fromServer.equals("Player reconnected successfully.")) {
+                // O jogador foi reconectado com sucesso
+            } else {
+                while (true) {
+                    String gameMode = userInputReader.readLine();
+                    if (gameMode.equals("1")) {
+                        writer.println("1");
+                        break;
+                    } else if (gameMode.equals("2")) {
+                        writer.println("2");
+                        break;
+                    } else {
+                        System.out.println("Invalid input. Please enter 1 or 2.");
+                    }
+                }
+                System.out.println(reader.readLine());
+            }
 
-                // Leitura da resposta do servidor sobre o sucesso do login
-                fromServer = reader.readLine();
-                System.out.println(fromServer);
-                if (fromServer.equals("Invalid login. Try again.")) {
-                    System.out.println("Login failed. Please try again.");
-                    return; // Se o login falhar, sai do programa
-                } else if (fromServer.equals("Player already connected.")) {
-                    return;
-                } else if (fromServer.equals("Player reconnected successfully.")) {
-                    // O jogador foi reconectado com sucesso
-                } else {
+            
+            String response;
+            boolean gameRunning = true;
+            
+            while (gameRunning) {
+                response = reader.readLine();
+                System.out.println(response);
+
+                if(response.contains("Game has started!")){
+                    continue;
+                }else if (response.contains("Guess the secret number")) {
+
+                    String guess;
+                    int guessedNumber = -1;
                     while (true) {
                         String gameMode = userInputReader.readLine();
                         if (gameMode.equals("1")) {
