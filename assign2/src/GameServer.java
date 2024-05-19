@@ -1,13 +1,13 @@
 import java.io.*;
 import java.net.*;
-import java.util.*;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.Files;
-import java.util.stream.Stream;
+import java.util.*;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Stream;
 
 public class GameServer {
 
@@ -49,13 +49,9 @@ public class GameServer {
                 System.out.println("User " + username + " logged in successfully.");
                 lock.lock();
                 try {
-                    for (int i = 0; i < gamesList.size(); i++) {
-                        Game game = gamesList.get(i);
-                        if (!game.isGameRunning()) {
-                            gamesList.remove(i);
-                            i--;
-                        }
-                    }
+                    // Remove completed games
+                    gamesList.removeIf(game -> !game.isGameRunning());
+
                     for (Game game : gamesList) {
                         for (Player player : game.getPlayers()) {
                             if (player.getUsername().equals(username)) {
@@ -91,6 +87,8 @@ public class GameServer {
                     Thread.ofVirtual().start(() -> {
                         processGameModeSelection(socket, writer, reader, username, sessionToken);
                     });
+
+
                 } finally {
                     lock.unlock();
                 }
@@ -105,7 +103,6 @@ public class GameServer {
             e.printStackTrace();
         }
     }
-
 
     private static void processGameModeSelection(Socket socket, PrintWriter writer, BufferedReader reader, String username, UUID sessionToken){
         try{
@@ -144,6 +141,7 @@ public class GameServer {
 
         
     }
+
 
     private static void startGame(List<Player> queue) {
         List<Player> players = new ArrayList<>(queue.subList(0, 2));

@@ -6,25 +6,23 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.util.List;
 import java.util.Random;
-
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class Game extends Thread{
+public class Game extends Thread {
     private List<Player> players;
     private int secretNumber;
-    private boolean gameRunning; 
+    private boolean gameRunning;
     private boolean number_guessed;
-  
+
     private Lock lock = new ReentrantLock();
     private Condition playerReconnected = lock.newCondition();
-
 
     public Game(List<Player> players) {
         this.players = players;
         this.secretNumber = generateSecretNumber();
-        this.gameRunning = true; 
+        this.gameRunning = true;
         this.number_guessed = false;
         this.start();
     }
@@ -44,7 +42,7 @@ public class Game extends Thread{
 
         if (number_guessed) {
             for (Player p : players) {
-                if (p.isDisconnected()){
+                if (p.isDisconnected()) {
                     writer.println("The other player was disconnected you won :)");
                     gameRunning = false;
                     return;
@@ -65,10 +63,10 @@ public class Game extends Thread{
         } catch (Exception e) {
             System.out.println("Player disconnected waiting for reconnection");
             player.setDisconnected(true);
-        
+
             lock.lock();
             try {
-                long timeoutInNanos = 100L * 1_000_000_000L;
+                long timeoutInNanos = 10L * 1_000_000_000L;
                 long remainingNanos = timeoutInNanos;
                 boolean reconnected = false;
                 while (remainingNanos > 0 && player.isDisconnected()) {
@@ -78,7 +76,7 @@ public class Game extends Thread{
                         break;
                     }
                 }
-                if (reconnected){
+                if (reconnected) {
                     System.out.println("Player reconnected");
                     handlePlayerTurn(player);
                     return;
@@ -92,7 +90,7 @@ public class Game extends Thread{
                 lock.unlock();
             }
         }
-        
+
         if (distance == 0) {
             writer.println("Congratulations! You guessed the secret number.");
             number_guessed = true;
@@ -104,15 +102,13 @@ public class Game extends Thread{
         } else {
             writer.println("Far! " + player.getSocket() + " is far from the secret number.");
         }
-
     }
 
     List<Player> getPlayers() {
         return players;
     }
 
-
-    boolean isGameRunning(){
+    boolean isGameRunning() {
         return gameRunning;
     }
 
@@ -137,7 +133,10 @@ public class Game extends Thread{
             while (true) {
                 for (Player player : players) {
                     handlePlayerTurn(player);
-                    if(!gameRunning) {
+                    if (!gameRunning) {
+                        for(Player p : players){
+                            notifyPlayersGameOver(players);
+                        }
                         players.clear();
                         return;
                     }
@@ -146,6 +145,14 @@ public class Game extends Thread{
         } catch (IOException e) {
             System.out.println("Error during game: " + e.getMessage());
             e.printStackTrace();
+        }
+    }
+
+    private void notifyPlayersGameOver(List<Player> p) throws IOException {
+        for (Player player : p) {
+            OutputStream output = player.getSocket().getOutputStream();
+            PrintWriter writer = new PrintWriter(output, true);
+            writer.println("Do you want to play again? (y/n)");
         }
     }
 }
