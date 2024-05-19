@@ -4,8 +4,8 @@ import java.util.Scanner;
 
 public class GameClient {
 
-    public static boolean continuePlaying() {
-        System.out.println("Do you want to keep playing? (y/n)");
+    public static boolean continuePlaying(BufferedReader reader) throws IOException{
+        System.out.println(reader.readLine());
         Scanner myObj = new Scanner(System.in);
         String option = myObj.nextLine();
         return option.equalsIgnoreCase("y");
@@ -114,7 +114,7 @@ public class GameClient {
                     }
                 }
 
-                connected = continuePlaying();
+                connected = continuePlaying(reader);
                 if (connected) {
                     writer.println("yes");
                 } else {

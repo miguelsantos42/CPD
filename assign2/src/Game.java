@@ -134,7 +134,9 @@ public class Game extends Thread {
                 for (Player player : players) {
                     handlePlayerTurn(player);
                     if (!gameRunning) {
-                        notifyPlayersGameOver();
+                        for(Player p : players){
+                            notifyPlayersGameOver(players);
+                        }
                         players.clear();
                         return;
                     }
@@ -146,11 +148,11 @@ public class Game extends Thread {
         }
     }
 
-    private void notifyPlayersGameOver() throws IOException {
-        for (Player player : players) {
+    private void notifyPlayersGameOver(List<Player> p) throws IOException {
+        for (Player player : p) {
             OutputStream output = player.getSocket().getOutputStream();
             PrintWriter writer = new PrintWriter(output, true);
-            writer.println("Game over. Do you want to play again? (yes/no)");
+            writer.println("Do you want to play again? (y/n)");
         }
     }
 }
