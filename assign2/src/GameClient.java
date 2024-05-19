@@ -25,15 +25,14 @@ public class GameClient {
             // Processo de login
             String fromServer;
             String fromUser;
-            
-            //username
+
+            // username
             fromServer = reader.readLine();
             System.out.println(fromServer);
             fromUser = userInputReader.readLine();
             writer.println(fromUser);
-            //writer.println(fromUser);
 
-            //password
+            // password
             fromServer = reader.readLine();
             System.out.println(fromServer);
             fromUser = userInputReader.readLine();
@@ -45,12 +44,26 @@ public class GameClient {
             if (fromServer.equals("Invalid login. Try again.")) {
                 System.out.println("Login failed. Please try again.");
                 return; // Se o login falhar, sai do programa
-            } else if(fromServer.equals("Player already connected.")) {
+            } else if (fromServer.equals("Player already connected.")) {
                 return;
-            } else if(fromServer.equals("Player reconnected successfully.")){
-            } 
-            else {
+            } else if (fromServer.equals("Player reconnected successfully.")) {
+                // O jogador foi reconectado com sucesso
+            } else {
                 System.out.println("Login successful. Starting game...");
+                System.out.println("Which game do you want to play? (1 - Casual, 2 - Ranked): ");
+                while (true) {
+                    String gameMode = userInputReader.readLine();
+                    if (gameMode.equals("1")) {
+                        writer.println("1");
+                        break;
+                    } else if (gameMode.equals("2")) {
+                        writer.println("2");
+                        break;
+                    } else {
+                        System.out.println("Invalid input. Please enter 1 or 2.");
+                    }
+                }
+                System.out.println(reader.readLine());
             }
 
             String response;
@@ -63,13 +76,13 @@ public class GameClient {
                 if (response.contains("Guess the secret number")) {
                     String guess;
                     int guessedNumber = -1;
-                    while(true){
+                    while (true) {
                         try {
                             guess = userInputReader.readLine();
                             guessedNumber = Integer.parseInt(guess);
-                            if(guessedNumber < 1 || guessedNumber > 100){
+                            if (guessedNumber < 1 || guessedNumber > 100) {
                                 System.out.println("Invalid input. Please enter a number between 1 and 100:");
-                            }else{
+                            } else {
                                 break;
                             }
                         } catch (Exception e) {
@@ -77,7 +90,7 @@ public class GameClient {
                         }
                     }
                     writer.println(String.valueOf(guessedNumber));
-                }else if(response.contains("The other player guessed the number :)") || response.contains("The other player was disconnected you won :)")){
+                } else if (response.contains("The other player guessed the number :)") || response.contains("The other player was disconnected you won :)")) {
                     gameRunning = false;
                     break;
                 }

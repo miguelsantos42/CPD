@@ -5,17 +5,17 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.Files;
 import java.util.stream.Stream;
-
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-public class GameServer{
 
-    private static List<Player> usersList = new ArrayList<>();
+public class GameServer {
+
+    private static List<Player> casualQueue = new ArrayList<>();
+    private static List<Player> rankedQueue = new ArrayList<>();
     private static List<Game> gamesList = new ArrayList<>();
     private static Lock lock = new ReentrantLock();
     private static Condition enoughPlayers = lock.newCondition();
-
 
     private static UUID generateSessionToken() {
         return UUID.randomUUID();
@@ -52,8 +52,8 @@ public class GameServer{
                     for (int i = 0; i < gamesList.size(); i++) {
                         Game game = gamesList.get(i);
                         if (!game.isGameRunning()) {
-                            gamesList.remove(i); // Remove o jogo da lista
-                            i--; // Decrementa o índice para ajustar a remoção
+                            gamesList.remove(i);
+                            i--;
                         }
                     }
                     for (Game game : gamesList) {
@@ -64,7 +64,7 @@ public class GameServer{
                                     player.setUserToken(sessionToken);
                                     player.setDisconnected(false);
                                     game.signalReconnect();
-                                    writer.println("Player reconnected to game.");
+                                    writer.println("Player reconnected successfully.");
                                     return;
                                 }
                                 writer.println("Player already connected.");
@@ -73,18 +73,40 @@ public class GameServer{
                             }
                         }
                     }
-                    for (Player player : usersList) {
+                    for (Player player : casualQueue) {
                         if (player.getUsername().equals(username)) {
                             writer.println("Player already connected.");
                             socket.close();
                             return;
                         }
                     }
-                    writer.println("Connected " + sessionToken);
-                    usersList.add(new Player(socket, username, sessionToken));
-                    if (usersList.size() == 2) {
-                        enoughPlayers.signal();
-                        startGame();
+                    for (Player player : rankedQueue) {
+                        if (player.getUsername().equals(username)) {
+                            writer.println("Player already connected.");
+                            socket.close();
+                            return;
+                        }
+                    }
+
+                    writer.println("Login successful. Which game do you want to play? (1 - Casual, 2 - Ranked):");
+                    String gameMode = reader.readLine();
+
+                    if (gameMode.equals("1")) {
+                        writer.println("Joined the casual game queue.");
+                        casualQueue.add(new Player(socket, username, sessionToken));
+                        if (casualQueue.size() >= 2) {
+                            startGame(casualQueue);
+                        }
+                    } else if (gameMode.equals("2")) {
+                        writer.println("Joined the ranked game queue.");
+                        rankedQueue.add(new Player(socket, username, sessionToken));
+                        if (rankedQueue.size() >= 2) {
+                            startGame(rankedQueue);
+                        }
+                    } else {
+                        writer.println("Invalid game mode. Connection closing.");
+                        socket.close();
+                        return;
                     }
 
                 } finally {
@@ -93,7 +115,7 @@ public class GameServer{
 
             } else {
                 writer.println("Invalid login. Try again.");
-                socket.close(); // Close the connection if the login is invalid
+                socket.close();
             }
 
         } catch (IOException e) {
@@ -102,14 +124,14 @@ public class GameServer{
         }
     }
 
-    private static void startGame(){
-        List<Player> usersListTemp = new ArrayList<>(usersList);
-        Game game = new Game(usersListTemp);
-        // Remover jogadores da lista após iniciar o jogo
+    private static void startGame(List<Player> queue) {
+        List<Player> players = new ArrayList<>(queue.subList(0, 2));
+        Game game = new Game(players);
+
         lock.lock();
         try {
             gamesList.add(game);
-            usersList.clear();
+            queue.removeAll(players);
         } finally {
             lock.unlock();
         }
@@ -126,7 +148,7 @@ public class GameServer{
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             System.out.println("Server is listening on port " + port);
 
-            while(true){
+            while (true) {
                 Socket socket = serverSocket.accept();
                 System.out.println("New client connected: " + socket);
 
